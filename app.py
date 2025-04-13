@@ -15,12 +15,13 @@ st.markdown("""
 1. **Download the Templates** using the buttons below.
 2. **Fill out the Input Template (`sample.xlsx`)** with chainage, widths, height, slope, etc.
 3. **Fill out the Summary Template (`summary.xlsx`)** with project-specific details.
-4. **Upload both filled files** using the file uploaders.
+4. **Upload both filled files without changing file name** using the file uploaders.
 5. Wait for the app to generate:
    - Project summary 📋
    - Cross-section plots 📊
    - Volume summary 📦
 6. **Preview plots** and **Download final reports** as PDF.
+7. **Fill out the Contract Identification No: Below for Project Title in Plot** with project-specific details.
 
 💡 This tool helps automate earthwork quantity and visualization reporting for roads, embankments, and cut/fill projects.
 """)
