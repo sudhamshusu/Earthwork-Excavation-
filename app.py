@@ -17,7 +17,6 @@ st.markdown("""
  -**Back Cutting – use 0.67** 
  -**Box Cutting – use 1.0.**
  **These values are based on standard thumb rules to estimate earthwork cross-sectional areas.**
----
 1. **Download the Templates** using the buttons below.
 2. **Fill out the Input Template (`sample.xlsx`)** with chainage, widths, height, slope, etc.
 3. **Fill out the Summary Template (`summary.xlsx`)** with project-specific details.
