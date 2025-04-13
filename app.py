@@ -254,11 +254,9 @@ if data_file and st.button("📊 Generate Cross Section Plots"):
     except Exception as e:
         st.error(f"❌ Error: {e}")
 
-st.markdown("---", unsafe_allow_html=True)
+st.markdown("---")
 st.markdown(
-    "<div style='text-align: center; font-size: 0.9em;'>"
-    "👷‍♂️ Developed by <a href='https://kiransubedi545.com.np/' target='_blank'>Kiran Subedi</a> | "
-    "📧 <a href='mailto:Kiransubedi545@gmail.com'>Kiransubedi545@gmail.com</a>"
-    "</div>",
-    unsafe_allow_html=True
+    "👷‍♂️ Developed by [Kiran Subedi](https://kiransubedi545.com.np/) | "
+    "📧 [Kiransubedi545@gmail.com](mailto:Kiransubedi545@gmail.com)"
 )
+
