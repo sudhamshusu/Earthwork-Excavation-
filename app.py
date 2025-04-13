@@ -8,48 +8,59 @@ import io
 st.set_page_config(layout="wide")
 st.title("📐 Earthwork Cross-Section Plot Generator")
 
-# 📘 Instructions
+# 📘 Instructions for Public Users
 st.markdown("""
 ### 📌 How to Use This Tool:
 1. **Download the Templates** using the buttons below.
-2. **Fill out the Input Template (`Sample.xlsx`)** with chainage, widths, height, slope, etc.
-3. **Optionally fill the Summary Template (`Summary.xlsx`)** with project details.
-4. **Upload your filled files below**.
+2. **Fill out the Input Template (`sample.xlsx`)** with chainage, widths, height, slope, etc.
+3. **Fill out the Summary Template (`summary.xlsx`)** with project-specific details.
+4. **Upload both filled files** using the file uploaders.
 5. Wait for the app to generate:
+   - Project summary 📋
    - Cross-section plots 📊
    - Volume summary 📦
-6. **Preview plots** and **Download final PDF reports**.
+6. **Preview plots** and **Download final reports** as PDF.
 
-💡 Use this for earthwork estimation, excavation, and road section visualization.
+💡 This tool helps automate earthwork quantity and visualization reporting for roads, embankments, and cut/fill projects.
 """)
 
-# 📂 Template Download
+# 📤 Upload your Filled Templates
+data_file = st.file_uploader("Upload Input Excel File", type=["xlsx"])
+summary_file = st.file_uploader("Upload Editable Summary Excel (Optional)", type=["xlsx"])
+
+# Live Summary Input Option
+st.markdown("---")
+st.subheader("📋 Or Enter Summary Information Manually")
+use_manual_summary = st.checkbox("Use Manual Summary Input")
+manual_summary = {}
+if use_manual_summary:
+    manual_summary["Contract Identification No"] = st.text_input("Contract Identification No")
+    manual_summary["Project Name"] = st.text_input("Project Name")
+    manual_summary["Client"] = st.text_input("Client")
+    manual_summary["Contractor"] = st.text_input("Contractor")
+    manual_summary["Agreement Date"] = st.date_input("Agreement Date")
+    manual_summary["Completion Date"] = st.date_input("Expected Completion Date")
+
 st.markdown("### 📁 Download Templates")
 col1, col2 = st.columns(2)
 with col1:
-    with open("Sample.xlsx", "rb") as sample_file:
-        st.download_button("📥 Download Sample.xlsx", sample_file, file_name="Sample.xlsx")
-with col2:
-    with open("Summary.xlsx", "rb") as summary_file:
-        st.download_button("📥 Download Summary.xlsx", summary_file, file_name="Summary.xlsx")
+   with open("Sample.xlsx", "rb") as sample_file:
+    st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx")
 
-# 📤 Upload Input
-st.markdown("---")
-data_file = st.file_uploader("Upload Filled Sample.xlsx", type=["xlsx"])
-
-# Initialize preview storage and plotting logic
-all_imgs = []
-pdf_buffer = io.BytesIO()
-pdf = PdfPages(pdf_buffer)
+with open("Summary.xlsx", "rb") as summary_file:
+    st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file, file_name="Summary.xlsx")
 
 if data_file:
+    # Load input data and find header
     raw = pd.read_excel(data_file, header=None, nrows=50)
     header_row_index = raw[raw.apply(lambda row: row.astype(str).str.contains("Chainage", case=False).any(), axis=1)].index[0]
     data = pd.read_excel(data_file, skiprows=header_row_index)
     data.dropna(subset=[data.columns[0]], inplace=True)
 
-    expected_columns = ["S.No", "Chainage", "Finished Roadway Width", "Finished Vertical Height",
-                        "Original Roadway Width", "Area Coefficient", "Cutting slope"]
+    expected_columns = [
+        "S.No", "Chainage", "Finished Roadway Width", "Finished Vertical Height",
+        "Original Roadway Width", "Area Coefficient", "Cutting slope"
+    ]
     data = data.iloc[:, :7]
     data.columns = expected_columns
 
@@ -63,10 +74,42 @@ if data_file:
     total_volume = data['Volume (m³)'].sum()
     data.loc[len(data.index)] = ['Total', '', '', '', '', '', '', '', total_volume]
 
+    # Extract Contract ID
+    contract_no = "Contract Identification No: "
+    if summary_file:
+        summary_df = pd.read_excel(summary_file, header=None, nrows=10)
+        for row in summary_df.itertuples(index=False):
+            for i, val in enumerate(row):
+                if isinstance(val, str) and "Contract Identification No" in val:
+                    contract_no += str(row[i + 1]) if i + 1 < len(row) else ""
+                    break
+
+    # Generate PDF
+    if summary_file or use_manual_summary:
+        fig_summary, ax_summary = plt.subplots(figsize=(11.7, 8.3))
+        ax_summary.axis('off')
+        if summary_file:
+            table_data = summary_df.dropna(how='all').dropna(axis=1, how='all')
+            cell_text = table_data.astype(str).values.tolist()
+        elif use_manual_summary:
+            cell_text = [[k, str(v)] for k, v in manual_summary.items()]
+        row_labels = table_data.index.tolist()
+        col_labels = table_data.columns.astype(str).tolist()
+        table = ax_summary.table(cellText=cell_text, colLabels=None, loc='center', cellLoc='left')
+        table.auto_set_font_size(False)
+        table.set_fontsize(8)
+        table.scale(1, 1.5)
+        fig_summary.suptitle("Project Summary", fontsize=12)
+        pdf.savefig(fig_summary)
+        plt.close(fig_summary)
+
+    pdf_buffer = io.BytesIO()
+    pdf = PdfPages(pdf_buffer)
     rows, cols = 2, 2
     figsize = (11.7, 8.3)
     plot_count = 0
     fig, axs = plt.subplots(rows, cols, figsize=figsize)
+    fig.suptitle(contract_no, fontsize=10, x=0.5, y=0.98)
     axs = axs.flatten()
 
     def plot_chainage_subplot(entry, ax):
@@ -77,15 +120,7 @@ if data_file:
         ac = entry['Area Coefficient']
         angle_deg = entry['Cutting slope']
 
-        if pd.isna(angle_deg):
-        st.error(f"❌ Missing Cutting slope at Chainage {chainage}. Please correct this value in your file.")
-        st.stop()
-    try:
-            angle_deg = float(angle_deg)
-            slope = 1 / np.tan(np.radians(angle_deg))
-        except Exception:
-        st.error(f"❌ Invalid Cutting slope value at Chainage {chainage}. Please correct this value in your file.")
-        st.stop()
+        slope = 1 / np.tan(np.radians(angle_deg))
         h1_coef = (ac - 0.5) * 2
         area = ac * (fw - ow) * fh
 
@@ -105,9 +140,9 @@ if data_file:
         ax.fill(og_x + fg_x[::-1], og_y + fg_y[::-1], facecolor='gray', alpha=0.3, hatch='//', edgecolor='black')
 
         ax.text((x3 + x7)/2, (fh + h1_coef * fh)/2, f"Area = {area:.2f} m²", fontsize=8, ha='center')
-        ax.text(min(fg_x), fh + 0.1, f"FR: {fw} m", fontsize=7, color='green')
-        ax.text(min(fg_x), fh + 0.25, f"OR: {ow} m", fontsize=7, color='red')
-        ax.text(min(fg_x), fh + 0.4, f"Height: {fh} m", fontsize=7, color='black')
+        ax.text(min(min(fg_x), min(og_x)), max(max(fg_y), max(og_y)) - 0.05, f"■ Finished Roadway (FR): {fw} m", ha='left', fontsize=7, color='green')
+        ax.text(min(min(fg_x), min(og_x)), max(max(fg_y), max(og_y)) - 0.2, f"■ Original Roadway (OR): {ow} m", ha='left', fontsize=7, color='red')
+        ax.text(min(min(fg_x), min(og_x)), max(max(fg_y), max(og_y)) - 0.35, f"■ Height: {fh} m", ha='left', fontsize=7, color='black')
 
         ax.axhline(0, color='black', linestyle=':')
         try:
@@ -122,32 +157,27 @@ if data_file:
         ax.set_ylabel("Height", fontsize=6)
         ax.grid(True, linestyle='--', linewidth=0.3)
 
-    st.info("⏳ Generating plots... please wait")
-    progress_bar = st.progress(0)
-    total_steps = len(data)
-    current_step = 0
-
+    preview_imgs = []  # Store preview images
     for idx, row in data.iterrows():
         if row.notna().all():
             ax = axs[plot_count % (rows * cols)]
             plot_chainage_subplot(row, ax)
 
-            # Save preview of all plots
-            buf = io.BytesIO()
-            fig_preview, ax_preview = plt.subplots()
-            plot_chainage_subplot(row, ax_preview)
-            fig_preview.savefig(buf, format='png')
-            plt.close(fig_preview)
-            all_imgs.append(buf.getvalue())
-
+            # Save preview of first 4 plots only
+            if plot_count < 4:
+                buf = io.BytesIO()
+                fig_preview, ax_preview = plt.subplots()
+                plot_chainage_subplot(row, ax_preview)
+                fig_preview.savefig(buf, format='png')
+                plt.close(fig_preview)
+                preview_imgs.append(buf.getvalue())
             plot_count += 1
-            current_step += 1
-            progress_bar.progress(min(current_step / total_steps, 1.0))
 
             if plot_count % (rows * cols) == 0:
                 pdf.savefig(fig)
                 plt.close(fig)
                 fig, axs = plt.subplots(rows, cols, figsize=figsize)
+                fig.suptitle(contract_no, fontsize=10, x=0.5, y=0.98)
                 axs = axs.flatten()
 
     if plot_count % (rows * cols) != 0:
@@ -158,14 +188,36 @@ if data_file:
 
     pdf.close()
 
-    st.success("✅ Plots generated successfully!")
-    if all_imgs:
-        st.subheader("📑 Preview All Plots")
-        for i, img in enumerate(all_imgs):
-            st.image(img, caption=f"Chainage Plot {i+1}", use_column_width=True)
+    # ➕ Generate Volume Summary PDF
+    volume_pdf_buffer = io.BytesIO()
+    volume_pdf = PdfPages(volume_pdf_buffer)
+    fig_volume, ax_volume = plt.subplots(figsize=(11.7, 8.3))
+    ax_volume.axis('off')
+    
+    vol_table_data = data[['Chainage', 'Area (m²)', 'Volume (m³)']].fillna('').astype(str).values.tolist()
+    vol_table = ax_volume.table(cellText=vol_table_data, colLabels=['Chainage', 'Area (m²)', 'Volume (m³)'], loc='center', cellLoc='center')
+    vol_table.auto_set_font_size(False)
+    vol_table.set_fontsize(8)
+    vol_table.scale(1.2, 1.5)
+    fig_volume.suptitle("Volume Summary", fontsize=12)
+    volume_pdf.savefig(fig_volume)
+    plt.close(fig_volume)
+    volume_pdf.close()
 
     st.download_button(
-        label="📥 Download Plotted Cross-Sections PDF",
+        label="📥 Download Volume Summary PDF",
+        data=volume_pdf_buffer.getvalue(),
+        file_name="Volume_Summary.pdf",
+        mime="application/pdf"
+    )
+    if preview_imgs:
+        st.subheader("🔍 Preview of First 4 Plots")
+        for img in preview_imgs:
+            st.image(img, use_column_width=True)
+
+    st.success("✅ Plots generated!")
+    st.download_button(
+        label="📥 Download PDF with Plots",
         data=pdf_buffer.getvalue(),
         file_name="CrossSection_Plots.pdf",
         mime="application/pdf"
