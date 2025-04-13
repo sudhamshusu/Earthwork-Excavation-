@@ -215,3 +215,45 @@ if data_file and st.button("📊 Generate Cross Section Plots"):
         for i, img in enumerate(preview_imgs):
             with cols[i % 4]:
                 st.image(img, use_column_width=True)
+
+
+# 🧾 Generate Excel summary for area and volume
+summary_output = []
+
+for i in range(len(data) - 1):
+    ch1 = float(str(data.at[i, "Chainage"]).replace("+", ""))
+    ch2 = float(str(data.at[i + 1, "Chainage"]).replace("+", ""))
+    a1 = data.at[i, "Area (m²)"]
+    a2 = data.at[i + 1, "Area (m²)"]
+    vol = ((a1 + a2) / 2) * (ch2 - ch1)
+    summary_output.append({
+        "S.No": i + 1,
+        "Chainage": f'{int(ch1 // 1000)}+{int(ch1 % 1000):03d}',
+        "Cross-sectional Area (m²)": round(a1, 2),
+        "Volume (m³)": round(vol, 2)
+    })
+
+# Add last row with area but no volume
+last_index = len(data) - 1
+last_ch = float(str(data.at[last_index, "Chainage"]).replace("+", ""))
+last_area = data.at[last_index, "Area (m²)"]
+summary_output.append({
+    "S.No": last_index + 1,
+    "Chainage": f'{int(last_ch // 1000)}+{int(last_ch % 1000):03d}',
+    "Cross-sectional Area (m²)": round(last_area, 2),
+    "Volume (m³)": ""
+})
+
+summary_df_excel = pd.DataFrame(summary_output)
+
+excel_buffer = io.BytesIO()
+with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+    summary_df_excel.to_excel(writer, index=False, sheet_name='CrossSection Summary')
+
+# ⬇️ Provide Download Button
+st.download_button(
+    label="📥 Download Excel Summary",
+    data=excel_buffer.getvalue(),
+    file_name="CrossSection_Summary.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
