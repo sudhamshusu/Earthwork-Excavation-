@@ -103,8 +103,103 @@ if data_file:
         table.set_fontsize(8)
         table.scale(1, 1.5)
         fig_summary.suptitle("Project Summary", fontsize=12)
-
         pdf.savefig(fig_summary)
         plt.close(fig_summary)
 
-    st.success("✅ Project summary PDF generated and ready to continue with plotting and volume summary.")
+    # Plot Cross Sections and Save to PDF
+    rows, cols = 2, 2
+    figsize = (11.7, 8.3)
+    plot_count = 0
+    fig, axs = plt.subplots(rows, cols, figsize=figsize)
+    fig.suptitle(contract_no, fontsize=10, x=0.5, y=0.98)
+    axs = axs.flatten()
+    preview_imgs = []
+
+    def plot_chainage_subplot(entry, ax):
+        chainage = entry['Chainage']
+        fw = entry['Finished Roadway Width']
+        fh = entry['Finished Vertical Height']
+        ow = entry['Original Roadway Width']
+        ac = entry['Area Coefficient']
+        angle_deg = entry['Cutting slope']
+
+        slope = 1 / np.tan(np.radians(angle_deg))
+        h1_coef = (ac - 0.5) * 2
+        area = ac * (fw - ow) * fh
+
+        x1 = -fw / 2
+        x3 = fw / 2
+        x4 = fw / 2 + slope * fh
+        x6 = x1 + ow
+        x7 = x6 + h1_coef * fh * slope
+
+        fg_x = [x1, 0, x3, x4]
+        fg_y = [0, 0, 0, fh]
+        og_x = [x1, x6, x7, x4]
+        og_y = [0, 0, h1_coef * fh, fh]
+
+        ax.plot(fg_x, fg_y, color="green", linewidth=2)
+        ax.plot(og_x, og_y, color="red", linestyle="--", linewidth=2)
+        ax.fill(og_x + fg_x[::-1], og_y + fg_y[::-1], facecolor='gray', alpha=0.3, hatch='//', edgecolor='black')
+
+        ax.text((x3 + x7)/2, (fh + h1_coef * fh)/2, f"Area = {area:.2f} m²", fontsize=8, ha='center')
+        ax.text(min(min(fg_x), min(og_x)), max(max(fg_y), max(og_y)) - 0.05, f"■ Finished Roadway (FR): {fw} m", ha='left', fontsize=7, color='green')
+        ax.text(min(min(fg_x), min(og_x)), max(max(fg_y), max(og_y)) - 0.2, f"■ Original Roadway (OR): {ow} m", ha='left', fontsize=7, color='red')
+        ax.text(min(min(fg_x), min(og_x)), max(max(fg_y), max(og_y)) - 0.35, f"■ Height: {fh} m", ha='left', fontsize=7, color='black')
+
+        ax.axhline(0, color='black', linestyle=':')
+        try:
+            ch_int = int(float(chainage))
+            km = ch_int // 1000
+            m = ch_int % 1000
+            chainage_str = f"{km}+{m:03d}"
+        except:
+            chainage_str = str(chainage)
+        ax.set_title(f"Chainage {chainage_str}", fontsize=9)
+        ax.set_xlabel("Roadway Width", fontsize=6)
+        ax.set_ylabel("Height", fontsize=6)
+        ax.grid(True, linestyle='--', linewidth=0.3)
+
+    for idx, row in data.iterrows():
+        if row.notna().all():
+            ax = axs[plot_count % (rows * cols)]
+            plot_chainage_subplot(row, ax)
+
+            if plot_count < 4:
+                buf = io.BytesIO()
+                fig_preview, ax_preview = plt.subplots()
+                plot_chainage_subplot(row, ax_preview)
+                fig_preview.savefig(buf, format='png')
+                plt.close(fig_preview)
+                preview_imgs.append(buf.getvalue())
+
+            plot_count += 1
+
+            if plot_count % (rows * cols) == 0:
+                pdf.savefig(fig)
+                plt.close(fig)
+                fig, axs = plt.subplots(rows, cols, figsize=figsize)
+                fig.suptitle(contract_no, fontsize=10, x=0.5, y=0.98)
+                axs = axs.flatten()
+
+    if plot_count % (rows * cols) != 0:
+        for i in range(plot_count % (rows * cols), rows * cols):
+            fig.delaxes(axs[i])
+        pdf.savefig(fig)
+        plt.close(fig)
+
+    pdf.close()
+
+    if preview_imgs:
+        st.subheader("🔍 Preview of First 4 Plots")
+        for img in preview_imgs:
+            st.image(img, use_column_width=True)
+
+    st.download_button(
+        label="📥 Download PDF with Plots",
+        data=pdf_buffer.getvalue(),
+        file_name="CrossSection_Plots.pdf",
+        mime="application/pdf"
+    )
+
+    st.success("✅ Plots generated and ready for download.")
