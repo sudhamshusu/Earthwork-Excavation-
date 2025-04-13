@@ -42,8 +42,7 @@ if use_manual_summary:
     manual_summary["Completion Date"] = st.date_input("Expected Completion Date")
 
 # 📥 Download Public Templates to Get Started
-with open("D:/Learning Programming/Python/Crosssection generator/sample.xlsx", "rb") as file:
-    col1, col2 = st.columns(2)
+col1, col2 = st.columns(2)
 with col1:
     with open("sample.xlsx", "rb") as sample_file:
         st.download_button("📥 Download Input Template", sample_file, file_name="sample.xlsx")
