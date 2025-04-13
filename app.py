@@ -226,24 +226,33 @@ if data_file and st.button("📊 Generate Cross Section Plots"):
                 with cols[i % 4]:
                     st.image(img, use_column_width=True)
 
-        # ✅ Minimal Volume Sheet (S.No, Chainage, Area, Volume)
-        minimal_df = pd.DataFrame({
-            "S.No": data["S.No"][:-1],  # Exclude 'Total'
-            "Chainage": data["Chainage"][:-1],
-            "Area": data["Area (m²)"][:-1].round(3),
-            "Volume": data["Volume (m³)"][:-1].round(3)
-        })
+       # ✅ Minimal Volume Sheet (S.No, Chainage, Area, Volume)
+minimal_df = pd.DataFrame({
+    "S.No": data["S.No"][:-1],  # Exclude 'Total'
+    "Chainage": data["Chainage"][:-1],
+    "Area": data["Area (m²)"][:-1].round(3),
+    "Volume": data["Volume (m³)"][:-1].round(3)
+})
 
-        excel_buffer_min = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer_min, engine='xlsxwriter') as writer:
-            minimal_df.to_excel(writer, index=False, sheet_name='Minimal Volume Sheet')
+# ➕ Add total row at the end
+total_volume = minimal_df["Volume"].sum()
+total_row = {
+    "S.No": "Total",
+    "Chainage": "",
+    "Area": "",
+    "Volume": round(total_volume, 3)
+}
+minimal_df = pd.concat([minimal_df, pd.DataFrame([total_row])], ignore_index=True)
 
-        st.download_button(
-            label="📥 Download Minimal Volume Sheet (S.No, Chainage, Area, Volume)",
-            data=excel_buffer_min.getvalue(),
-            file_name="Volume_Summary_Minimal.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+# Export to Excel with new sheet name
+excel_buffer_min = io.BytesIO()
+with pd.ExcelWriter(excel_buffer_min) as writer:
+    minimal_df.to_excel(writer, index=False, sheet_name='Volume Calculation Sheet')
 
-    except Exception as e:
-        st.error(f"❌ Error: {e}")
+# Download Button
+st.download_button(
+    label="📥 Download Volume Calculation Sheet (S.No, Chainage, Area, Volume)",
+    data=excel_buffer_min.getvalue(),
+    file_name="Volume_Calculation_Sheet.xlsx",
+    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+)
