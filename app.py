@@ -41,13 +41,14 @@ if use_manual_summary:
     manual_summary["Agreement Date"] = st.date_input("Agreement Date")
     manual_summary["Completion Date"] = st.date_input("Expected Completion Date")
 
-with st.expander("📂 Download Input Template (sample.xlsx)", expanded=False):
+st.markdown("### 📁 Download Templates")
+col1, col2 = st.columns(2)
+with col1:
     with open("sample.xlsx", "rb") as sample_file:
-        st.download_button("📥 Download Input Template", sample_file, file_name="sample.xlsx")
-
-with st.expander("📂 Download Summary Template (summary.xlsx)", expanded=False):
+        st.download_button("📥 Download Input Template (sample.xlsx)", sample_file, file_name="sample.xlsx")
+with col2:
     with open("summary.xlsx", "rb") as summary_file:
-        st.download_button("📥 Download Summary Template", summary_file, file_name="summary.xlsx")
+        st.download_button("📥 Download Summary Template (summary.xlsx)", summary_file, file_name="summary.xlsx")
 
 if data_file:
     # Load input data and find header
