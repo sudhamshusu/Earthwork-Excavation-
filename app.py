@@ -24,7 +24,7 @@ These values are based on standard thumb rules to estimate earthwork cross-secti
 4. **Upload both filled files without changing file name** using the file uploaders.
 5. **Fill out Contract Identification No:** below to personalize your plots.
 6. Click the **Generate Cross Section Plots** button.
-7. **Preview plots** and **Download final report** as PDF.
+7. **Preview plots** and **Download final report** as PDF and Excel summary.
 """)
 
 # 📁 Download Template Files
@@ -108,6 +108,7 @@ def plot_chainage_subplot(entry, ax):
 # ✅ Main Generate Button
 if data_file and st.button("📊 Generate Cross Section Plots"):
     try:
+        # Step 1: Read data
         raw = pd.read_excel(data_file, header=None, nrows=50)
         header_row_index = raw[raw.apply(lambda row: row.astype(str).str.contains("Chainage", case=False).any(), axis=1)].index[0]
         data = pd.read_excel(data_file, skiprows=header_row_index)
@@ -120,7 +121,7 @@ if data_file and st.button("📊 Generate Cross Section Plots"):
         data = data.iloc[:, :7]
         data.columns = expected_columns
 
-        # ➕ Area and Volume Calculation
+        # Step 2: Area and Volume Calculation
         data['Area (m²)'] = data.apply(
             lambda row: row['Area Coefficient'] * (row['Finished Roadway Width'] - row['Original Roadway Width']) * row['Finished Vertical Height'], axis=1
         )
@@ -134,10 +135,8 @@ if data_file and st.button("📊 Generate Cross Section Plots"):
             volume_list.append(vol)
 
         data['Volume (m³)'] = volume_list
-        total_volume = sum(volume_list)
-        data.loc[len(data.index)] = ['Total', '', '', '', '', '', '', '', total_volume]
 
-        # 📄 Contract No from summary or manual
+        # Step 3: Contract Info
         contract_no = contract_no_input
         if summary_file:
             summary_df = pd.read_excel(summary_file, header=None, nrows=10)
@@ -147,11 +146,10 @@ if data_file and st.button("📊 Generate Cross Section Plots"):
                         contract_no = str(row[i + 1]) if i + 1 < len(row) else contract_no
                         break
 
-        # 📄 PDF Generation
+        # Step 4: PDF Plot Generation
         pdf_buffer = io.BytesIO()
         pdf = PdfPages(pdf_buffer)
 
-        # 📋 Project Summary Page
         if summary_file or use_manual_summary:
             fig_summary, ax_summary = plt.subplots(figsize=(11.7, 8.3))
             ax_summary.axis('off')
@@ -168,7 +166,6 @@ if data_file and st.button("📊 Generate Cross Section Plots"):
             pdf.savefig(fig_summary)
             plt.close(fig_summary)
 
-        # 🖼 Plotting Section
         rows, cols = 2, 2
         figsize = (11.7, 8.3)
         fig, axs = plt.subplots(rows, cols, figsize=figsize)
@@ -226,33 +223,33 @@ if data_file and st.button("📊 Generate Cross Section Plots"):
                 with cols[i % 4]:
                     st.image(img, use_column_width=True)
 
-       # ✅ Minimal Volume Sheet (S.No, Chainage, Area, Volume)
-minimal_df = pd.DataFrame({
-    "S.No": data["S.No"][:-1],  # Exclude 'Total'
-    "Chainage": data["Chainage"][:-1],
-    "Area": data["Area (m²)"][:-1].round(3),
-    "Volume": data["Volume (m³)"][:-1].round(3)
-})
+        # Step 5: Generate Volume Calculation Sheet (Excel)
+        minimal_df = pd.DataFrame({
+            "S.No": data["S.No"],
+            "Chainage": data["Chainage"],
+            "Area": data["Area (m²)"].round(3),
+            "Volume": data["Volume (m³)"].round(3)
+        })
 
-# ➕ Add total row at the end
-total_volume = minimal_df["Volume"].sum()
-total_row = {
-    "S.No": "Total",
-    "Chainage": "",
-    "Area": "",
-    "Volume": round(total_volume, 3)
-}
-minimal_df = pd.concat([minimal_df, pd.DataFrame([total_row])], ignore_index=True)
+        total_volume = minimal_df["Volume"].sum()
+        total_row = {
+            "S.No": "Total",
+            "Chainage": "",
+            "Area": "",
+            "Volume": round(total_volume, 3)
+        }
+        minimal_df = pd.concat([minimal_df, pd.DataFrame([total_row])], ignore_index=True)
 
-# Export to Excel with new sheet name
-excel_buffer_min = io.BytesIO()
-with pd.ExcelWriter(excel_buffer_min) as writer:
-    minimal_df.to_excel(writer, index=False, sheet_name='Volume Calculation Sheet')
+        excel_buffer_min = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer_min) as writer:
+            minimal_df.to_excel(writer, index=False, sheet_name='Volume Calculation Sheet')
 
-# Download Button
-st.download_button(
-    label="📥 Download Volume Calculation Sheet (S.No, Chainage, Area, Volume)",
-    data=excel_buffer_min.getvalue(),
-    file_name="Volume_Calculation_Sheet.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+        st.download_button(
+            label="📥 Download Volume Calculation Sheet (S.No, Chainage, Area, Volume)",
+            data=excel_buffer_min.getvalue(),
+            file_name="Volume_Calculation_Sheet.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    except Exception as e:
+        st.error(f"❌ Error: {e}")
