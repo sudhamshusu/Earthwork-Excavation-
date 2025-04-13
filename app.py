@@ -7,7 +7,7 @@ import io
 import os
 
 st.set_page_config(layout="wide")
-st.title("📊 Earthwork Cross-Section Plot Generator")
+st.title("📊 Earthwork Excavation Cross-Section Plotter")
 
 # 📘 Instructions
 st.markdown("""
