@@ -41,12 +41,11 @@ if use_manual_summary:
     manual_summary["Agreement Date"] = st.date_input("Agreement Date")
     manual_summary["Completion Date"] = st.date_input("Expected Completion Date")
 
-# 📥 Download Public Templates to Get Started
-col1, col2 = st.columns(2)
-with col1:
+with st.expander("📂 Download Input Template (sample.xlsx)", expanded=False):
     with open("sample.xlsx", "rb") as sample_file:
         st.download_button("📥 Download Input Template", sample_file, file_name="sample.xlsx")
-with col2:
+
+with st.expander("📂 Download Summary Template (summary.xlsx)", expanded=False):
     with open("summary.xlsx", "rb") as summary_file:
         st.download_button("📥 Download Summary Template", summary_file, file_name="summary.xlsx")
 
