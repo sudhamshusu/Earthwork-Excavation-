@@ -44,11 +44,11 @@ if use_manual_summary:
 st.markdown("### 📁 Download Templates")
 col1, col2 = st.columns(2)
 with col1:
-    with open("sample.xlsx", "rb") as sample_file:
-        st.download_button("📥 Download Input Template (sample.xlsx)", sample_file, file_name="sample.xlsx")
-with col2:
-    with open("summary.xlsx", "rb") as summary_file:
-        st.download_button("📥 Download Summary Template (summary.xlsx)", summary_file, file_name="summary.xlsx")
+   with open("Sample.xlsx", "rb") as sample_file:
+    st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx")
+
+with open("Summary.xlsx", "rb") as summary_file:
+    st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file, file_name="Summary.xlsx")
 
 if data_file:
     # Load input data and find header
