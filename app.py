@@ -9,16 +9,17 @@ import os
 st.set_page_config(layout="wide")
 st.title("📊 Earthwork Excavation Cross-Section Plotter")
 
-# 📘 Instructions
+# 📘 Instructions 
 st.markdown("""
+**Use the following area coefficients based on the type of cutting: Fresh Cutting – use 0.5 Back Cutting – use 0.67 Box Cutting – use 1.0. These values are based on standard thumb rules to estimate earthwork cross-sectional areas.**
 ### 📌 How to Use This Tool:
 1. **Download the Templates** using the buttons below.
 2. **Fill out the Input Template (`sample.xlsx`)** with chainage, widths, height, slope, etc.
 3. **Fill out the Summary Template (`summary.xlsx`)** with project-specific details.
 4. **Upload both filled files without changing file name** using the file uploaders.
-5. Click the **Generate Cross Section Plots** button.
-6. **Preview plots** and **Download final report** as PDF.
-7. **Fill out Contract Identification No:** below to personalize your plots.
+5. **Fill out Contract Identification No:** below to personalize your plots.
+6. Click the **Generate Cross Section Plots** button.
+7. **Preview plots** and **Download final report** as PDF.
 """)
 
 # 📁 Download Template Files
