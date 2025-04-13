@@ -12,11 +12,11 @@ st.title("📊 Earthwork Excavation Cross-Section Plotter")
 # 📘 Instructions 
 st.markdown("""
 ### 📌 How to Use This Tool:
-**Use the following area coefficients based on the type of cutting: **
-**Fresh Cutting – use 0.5 **
-**Back Cutting – use 0.67** 
-**Box Cutting – use 1.0.**
-**These values are based on standard thumb rules to estimate earthwork cross-sectional areas.**
+ **Use the following area coefficients based on the type of cutting: **
+ **Fresh Cutting – use 0.5 **
+ **Back Cutting – use 0.67** 
+ **Box Cutting – use 1.0.**
+ **These values are based on standard thumb rules to estimate earthwork cross-sectional areas.**
 
 1. **Download the Templates** using the buttons below.
 2. **Fill out the Input Template (`sample.xlsx`)** with chainage, widths, height, slope, etc.
