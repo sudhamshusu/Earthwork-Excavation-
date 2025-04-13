@@ -4,9 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import io
+import os
 
 st.set_page_config(layout="wide")
-st.title("📐 Earthwork Cross-Section Plot Generator")
+st.title("📊 Earthwork Cross-Section Plot Generator")
 
 # 📘 Instructions for Public Users
 st.markdown("""
@@ -24,11 +25,11 @@ st.markdown("""
 💡 This tool helps automate earthwork quantity and visualization reporting for roads, embankments, and cut/fill projects.
 """)
 
-# 📤 Upload your Filled Templates
+# 📄 Upload your Filled Templates
 data_file = st.file_uploader("Upload Input Excel File", type=["xlsx"])
 summary_file = st.file_uploader("Upload Editable Summary Excel (Optional)", type=["xlsx"])
 
-# Live Summary Input Option
+# Debug output of file availability
 st.markdown("---")
 st.subheader("📋 Or Enter Summary Information Manually")
 use_manual_summary = st.checkbox("Use Manual Summary Input")
@@ -44,12 +45,13 @@ if use_manual_summary:
 st.markdown("### 📁 Download Templates")
 col1, col2 = st.columns(2)
 with col1:
-   with open("Sample.xlsx", "rb") as sample_file:
-    st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx")
+    with open("Sample.xlsx", "rb") as sample_file:
+        st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx")
 
-with open("Summary.xlsx", "rb") as summary_file:
-    st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file, file_name="Summary.xlsx")
-
+with col2:
+    with open("Summary.xlsx", "rb") as summary_file_download:
+        st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file_download, file_name="Summary.xlsx")
+       
 if data_file:
     # Load input data and find header
     raw = pd.read_excel(data_file, header=None, nrows=50)
