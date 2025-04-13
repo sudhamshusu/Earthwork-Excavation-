@@ -123,7 +123,14 @@ if data_file:
         ac = entry['Area Coefficient']
         angle_deg = entry['Cutting slope']
 
-        slope = 1 / np.tan(np.radians(angle_deg))
+        try:
+            angle_deg = float(angle_deg) if pd.notna(angle_deg) else 75
+            if angle_deg == 0:
+                raise ValueError("Angle cannot be zero.")
+            slope = 1 / np.tan(np.radians(angle_deg))
+        except Exception as e:
+            st.warning(f"⚠️ Skipping Chainage {chainage}: Invalid Cutting slope value '{angle_deg}'")
+            return
         h1_coef = (ac - 0.5) * 2
         area = ac * (fw - ow) * fh
 
