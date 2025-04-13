@@ -4,7 +4,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import io
-import os
 
 st.set_page_config(layout="wide")
 st.title("📊 Earthwork Excavation Cross-Section Plotter")
@@ -12,11 +11,13 @@ st.title("📊 Earthwork Excavation Cross-Section Plotter")
 # 📘 Instructions 
 st.markdown("""
 ### 📌 How to Use This Tool:
- Use the following area coefficients based on the type of cutting:
- - Fresh Cutting – use 0.5
- - Back Cutting – use 0.67
- - Box Cutting – use 1.0.
- These values are based on standard thumb rules to estimate earthwork cross-sectional areas.
+Use the following area coefficients based on the type of cutting:
+- Fresh Cutting – use 0.5
+- Back Cutting – use 0.67
+- Box Cutting – use 1.0.
+
+These values are based on standard thumb rules to estimate earthwork cross-sectional areas.
+
 1. **Download the Templates** using the buttons below.
 2. **Fill out the Input Template (`sample.xlsx`)** with chainage, widths, height, slope, etc.
 3. **Fill out the Summary Template (`summary.xlsx`)** with project-specific details.
@@ -32,7 +33,6 @@ col1, col2 = st.columns(2)
 with col1:
     with open("Sample.xlsx", "rb") as sample_file:
         st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx")
-
 with col2:
     with open("Summary.xlsx", "rb") as summary_file:
         st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file, file_name="Summary.xlsx")
@@ -41,7 +41,7 @@ with col2:
 data_file = st.file_uploader("Upload Input Excel File", type=["xlsx"])
 summary_file = st.file_uploader("Upload Editable Summary Excel (Optional)", type=["xlsx"])
 
-# Optional Manual Summary
+# 📋 Optional Manual Summary
 st.markdown("---")
 st.subheader("📋 Or Enter Summary Information Manually")
 use_manual_summary = st.checkbox("Use Manual Summary Input")
@@ -107,153 +107,147 @@ def plot_chainage_subplot(entry, ax):
 
 # ✅ Main Generate Button
 if data_file and st.button("📊 Generate Cross Section Plots"):
-    raw = pd.read_excel(data_file, header=None, nrows=50)
-    header_row_index = raw[raw.apply(lambda row: row.astype(str).str.contains("Chainage", case=False).any(), axis=1)].index[0]
-    data = pd.read_excel(data_file, skiprows=header_row_index)
-    data.dropna(subset=[data.columns[0]], inplace=True)
+    try:
+        raw = pd.read_excel(data_file, header=None, nrows=50)
+        header_row_index = raw[raw.apply(lambda row: row.astype(str).str.contains("Chainage", case=False).any(), axis=1)].index[0]
+        data = pd.read_excel(data_file, skiprows=header_row_index)
+        data.dropna(subset=[data.columns[0]], inplace=True)
 
-    expected_columns = [
-        "S.No", "Chainage", "Finished Roadway Width", "Finished Vertical Height",
-        "Original Roadway Width", "Area Coefficient", "Cutting slope"
-    ]
-    data = data.iloc[:, :7]
-    data.columns = expected_columns
+        expected_columns = [
+            "S.No", "Chainage", "Finished Roadway Width", "Finished Vertical Height",
+            "Original Roadway Width", "Area Coefficient", "Cutting slope"
+        ]
+        data = data.iloc[:, :7]
+        data.columns = expected_columns
 
-    data['Area (m²)'] = data.apply(lambda row: row['Area Coefficient'] * (row['Finished Roadway Width'] - row['Original Roadway Width']) * row['Finished Vertical Height'], axis=1)
-    data['Volume (m³)'] = 0.0
-    chainage_values = data['Chainage'].astype(str).str.replace("+", "").astype(float).values
-    for i in range(1, len(data)):
-        delta_ch = chainage_values[i] - chainage_values[i - 1]
-        data.at[i, 'Volume (m³)'] = delta_ch * data.at[i, 'Area (m²)']
-    total_volume = data['Volume (m³)'].sum()
-    data.loc[len(data.index)] = ['Total', '', '', '', '', '', '', '', total_volume]
+        # ➕ Area and Volume Calculation
+        data['Area (m²)'] = data.apply(
+            lambda row: row['Area Coefficient'] * (row['Finished Roadway Width'] - row['Original Roadway Width']) * row['Finished Vertical Height'], axis=1
+        )
+        chainage_values = data['Chainage'].astype(str).str.replace("+", "").astype(float).values
 
-    contract_no = contract_no_input if contract_no_input else ""
-    if summary_file:
-        summary_df = pd.read_excel(summary_file, header=None, nrows=10)
-        for row in summary_df.itertuples(index=False):
-            for i, val in enumerate(row):
-                if isinstance(val, str) and "contract" in val.lower() and "identification" in val.lower():
-                    contract_no = str(row[i + 1]) if i + 1 < len(row) else contract_no
-                    break
+        volume_list = [0.0]
+        for i in range(1, len(data)):
+            ch1, ch2 = chainage_values[i - 1], chainage_values[i]
+            a1, a2 = data.at[i - 1, 'Area (m²)'], data.at[i, 'Area (m²)']
+            vol = ((a1 + a2) / 2) * (ch2 - ch1)
+            volume_list.append(vol)
 
-    pdf_buffer = io.BytesIO()
-    pdf = PdfPages(pdf_buffer)
+        data['Volume (m³)'] = volume_list
+        total_volume = sum(volume_list)
+        data.loc[len(data.index)] = ['Total', '', '', '', '', '', '', '', total_volume]
 
-    # Summary page
-    if summary_file or use_manual_summary:
-        fig_summary, ax_summary = plt.subplots(figsize=(11.7, 8.3))
-        ax_summary.axis('off')
+        # 📄 Contract No from summary or manual
+        contract_no = contract_no_input
         if summary_file:
-            table_data = summary_df.dropna(how='all').dropna(axis=1, how='all')
-            cell_text = table_data.astype(str).values.tolist()
-        elif use_manual_summary:
-            cell_text = [[k, str(v)] for k, v in manual_summary.items()]
-        table = ax_summary.table(cellText=cell_text, colLabels=None, loc='center', cellLoc='left')
-        table.auto_set_font_size(False)
-        table.set_fontsize(8)
-        table.scale(1, 1.5)
-        fig_summary.suptitle("Project Summary", fontsize=12)
-        pdf.savefig(fig_summary)
-        plt.close(fig_summary)
+            summary_df = pd.read_excel(summary_file, header=None, nrows=10)
+            for row in summary_df.itertuples(index=False):
+                for i, val in enumerate(row):
+                    if isinstance(val, str) and "contract" in val.lower() and "identification" in val.lower():
+                        contract_no = str(row[i + 1]) if i + 1 < len(row) else contract_no
+                        break
 
-    # Plotting section
-    rows, cols = 2, 2
-    figsize = (11.7, 8.3)
-    fig, axs = plt.subplots(rows, cols, figsize=figsize)
-    fig.suptitle(contract_no, fontsize=10, x=0.5, y=0.98)
-    axs = axs.flatten()
-    plot_count = 0
-    preview_imgs = []
+        # 📄 PDF Generation
+        pdf_buffer = io.BytesIO()
+        pdf = PdfPages(pdf_buffer)
 
-    progress = st.progress(0, text="Generating plots...")
-    step = 1 / max(len(data), 1)
+        # 📋 Project Summary Page
+        if summary_file or use_manual_summary:
+            fig_summary, ax_summary = plt.subplots(figsize=(11.7, 8.3))
+            ax_summary.axis('off')
+            if summary_file:
+                table_data = summary_df.dropna(how='all').dropna(axis=1, how='all')
+                cell_text = table_data.astype(str).values.tolist()
+            else:
+                cell_text = [[k, str(v)] for k, v in manual_summary.items()]
+            table = ax_summary.table(cellText=cell_text, colLabels=None, loc='center', cellLoc='left')
+            table.auto_set_font_size(False)
+            table.set_fontsize(8)
+            table.scale(1, 1.5)
+            fig_summary.suptitle("Project Summary", fontsize=12)
+            pdf.savefig(fig_summary)
+            plt.close(fig_summary)
 
-    for idx, row in data.iterrows():
-        if row.notna().all():
-            ax = axs[plot_count % (rows * cols)]
-            plot_chainage_subplot(row, ax)
+        # 🖼 Plotting Section
+        rows, cols = 2, 2
+        figsize = (11.7, 8.3)
+        fig, axs = plt.subplots(rows, cols, figsize=figsize)
+        axs = axs.flatten()
+        fig.suptitle(contract_no, fontsize=10, x=0.5, y=0.98)
 
-            if plot_count < 40:
-                buf = io.BytesIO()
-                fig_preview, ax_preview = plt.subplots()
-                plot_chainage_subplot(row, ax_preview)
-                fig_preview.savefig(buf, format='png')
-                plt.close(fig_preview)
-                preview_imgs.append(buf.getvalue())
+        plot_count = 0
+        preview_imgs = []
+        progress = st.progress(0, text="Generating plots...")
+        step = 1 / max(len(data), 1)
 
-            plot_count += 1
-            progress.progress(min(int(plot_count * step * 100), 100), text="Processing...")
+        for idx, row in data.iterrows():
+            if row.notna().all():
+                ax = axs[plot_count % (rows * cols)]
+                plot_chainage_subplot(row, ax)
 
-            if plot_count % (rows * cols) == 0:
-                pdf.savefig(fig)
-                plt.close(fig)
-                fig, axs = plt.subplots(rows, cols, figsize=figsize)
-                fig.suptitle(contract_no, fontsize=10, x=0.5, y=0.98)
-                axs = axs.flatten()
+                if plot_count < 40:
+                    buf = io.BytesIO()
+                    fig_preview, ax_preview = plt.subplots()
+                    plot_chainage_subplot(row, ax_preview)
+                    fig_preview.savefig(buf, format='png')
+                    plt.close(fig_preview)
+                    preview_imgs.append(buf.getvalue())
 
-    if plot_count % (rows * cols) != 0:
-        for i in range(plot_count % (rows * cols), rows * cols):
-            fig.delaxes(axs[i])
-        pdf.savefig(fig)
-        plt.close(fig)
+                plot_count += 1
+                progress.progress(min(int(plot_count * step * 100), 100), text="Processing...")
 
-    pdf.close()
-    progress.progress(100, text="Done!")
+                if plot_count % (rows * cols) == 0:
+                    pdf.savefig(fig)
+                    plt.close(fig)
+                    fig, axs = plt.subplots(rows, cols, figsize=figsize)
+                    axs = axs.flatten()
 
-    st.success("✅ Plots generated successfully!")
-    st.download_button(
-        label="📥 Download PDF with Plots",
-        data=pdf_buffer.getvalue(),
-        file_name="CrossSection_Plots.pdf",
-        mime="application/pdf"
-    )
+        if plot_count % (rows * cols) != 0:
+            for i in range(plot_count % (rows * cols), rows * cols):
+                fig.delaxes(axs[i])
+            pdf.savefig(fig)
+            plt.close(fig)
 
-    if preview_imgs:
-        st.subheader("🔍 Preview of Plots (up to 40 shown)")
-        cols = st.columns(4)
-        for i, img in enumerate(preview_imgs):
-            with cols[i % 4]:
-                st.image(img, use_column_width=True)
+        pdf.close()
+        progress.progress(100, text="Done!")
 
+        st.success("✅ Plots generated successfully!")
+        st.download_button(
+            label="📥 Download PDF with Plots",
+            data=pdf_buffer.getvalue(),
+            file_name="CrossSection_Plots.pdf",
+            mime="application/pdf"
+        )
 
-# 🧾 Generate Excel summary for area and volume
-summary_output = []
+        if preview_imgs:
+            st.subheader("🔍 Preview of Plots (up to 40 shown)")
+            cols = st.columns(4)
+            for i, img in enumerate(preview_imgs):
+                with cols[i % 4]:
+                    st.image(img, use_column_width=True)
 
-for i in range(len(data) - 1):
-    ch1 = float(str(data.at[i, "Chainage"]).replace("+", ""))
-    ch2 = float(str(data.at[i + 1, "Chainage"]).replace("+", ""))
-    a1 = data.at[i, "Area (m²)"]
-    a2 = data.at[i + 1, "Area (m²)"]
-    vol = ((a1 + a2) / 2) * (ch2 - ch1)
-    summary_output.append({
-        "S.No": i + 1,
-        "Chainage": f'{int(ch1 // 1000)}+{int(ch1 % 1000):03d}',
-        "Cross-sectional Area (m²)": round(a1, 2),
-        "Volume (m³)": round(vol, 2)
-    })
+        # 🧾 Export Excel Summary (S.No, Chainage, Area, Volume)
+        summary_output = []
+        for i in range(len(data) - 1):  # skip total row
+            ch = float(str(data.at[i, "Chainage"]).replace("+", ""))
+            summary_output.append({
+                "S.No": i + 1,
+                "Chainage": f'{int(ch // 1000)}+{int(ch % 1000):03d}',
+                "Cross-sectional Area (m²)": round(data.at[i, "Area (m²)"], 2),
+                "Volume (m³)": round(data.at[i, "Volume (m³)"], 2)
+            })
 
-# Add last row with area but no volume
-last_index = len(data) - 1
-last_ch = float(str(data.at[last_index, "Chainage"]).replace("+", ""))
-last_area = data.at[last_index, "Area (m²)"]
-summary_output.append({
-    "S.No": last_index + 1,
-    "Chainage": f'{int(last_ch // 1000)}+{int(last_ch % 1000):03d}',
-    "Cross-sectional Area (m²)": round(last_area, 2),
-    "Volume (m³)": ""
-})
+        summary_df_excel = pd.DataFrame(summary_output)
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
+            summary_df_excel.to_excel(writer, index=False, sheet_name='CrossSection Summary')
 
-summary_df_excel = pd.DataFrame(summary_output)
+        st.download_button(
+            label="📥 Download Excel Summary",
+            data=excel_buffer.getvalue(),
+            file_name="CrossSection_Summary.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
-excel_buffer = io.BytesIO()
-with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-    summary_df_excel.to_excel(writer, index=False, sheet_name='CrossSection Summary')
-
-# ⬇️ Provide Download Button
-st.download_button(
-    label="📥 Download Excel Summary",
-    data=excel_buffer.getvalue(),
-    file_name="CrossSection_Summary.xlsx",
-    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-)
+    except Exception as e:
+        st.error(f"❌ Error: {e}")
