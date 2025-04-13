@@ -25,6 +25,16 @@ st.markdown("""
 💡 This tool helps automate earthwork quantity and visualization reporting for roads, embankments, and cut/fill projects.
 """)
 
+st.markdown("### 📁 Download Templates")
+col1, col2 = st.columns(2)
+with col1:
+    with open("Sample.xlsx", "rb") as sample_file:
+        st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx")
+
+with col2:
+    with open("Summary.xlsx", "rb") as summary_file_download:
+        st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file_download, file_name="Summary.xlsx")
+
 # 📄 Upload your Filled Templates
 data_file = st.file_uploader("Upload Input Excel File", type=["xlsx"])
 summary_file = st.file_uploader("Upload Editable Summary Excel (Optional)", type=["xlsx"])
@@ -79,7 +89,7 @@ if data_file:
         summary_df = pd.read_excel(summary_file, header=None, nrows=10)
         for row in summary_df.itertuples(index=False):
             for i, val in enumerate(row):
-                if isinstance(val, str) and "Contract Identification No" in val:
+                if isinstance(val, str) and "contract" in val.lower() and "identification" in val.lower():
                     contract_no += str(row[i + 1]) if i + 1 < len(row) else ""
                     break
 
