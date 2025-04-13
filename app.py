@@ -29,11 +29,11 @@ st.markdown("### 📁 Download Templates")
 col1, col2 = st.columns(2)
 with col1:
     with open("Sample.xlsx", "rb") as sample_file:
-        st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx")
+        st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx", key="download_sample")
 
 with col2:
     with open("Summary.xlsx", "rb") as summary_file_download:
-        st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file_download, file_name="Summary.xlsx")
+        st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file_download, file_name="Summary.xlsx", key="download_summary")
 
 # 📄 Upload your Filled Templates
 data_file = st.file_uploader("Upload Input Excel File", type=["xlsx"])
@@ -56,11 +56,11 @@ st.markdown("### 📁 Download Templates")
 col1, col2 = st.columns(2)
 with col1:
     with open("Sample.xlsx", "rb") as sample_file:
-        st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx")
+        st.download_button("📥 Download Input Template (Sample.xlsx)", sample_file, file_name="Sample.xlsx", key="download_sample")
 
 with col2:
     with open("Summary.xlsx", "rb") as summary_file_download:
-        st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file_download, file_name="Summary.xlsx")
+        st.download_button("📥 Download Summary Template (Summary.xlsx)", summary_file_download, file_name="Summary.xlsx", key="download_summary")
 
 if data_file:
     raw = pd.read_excel(data_file, header=None, nrows=50)
