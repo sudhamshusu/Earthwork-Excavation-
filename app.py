@@ -77,7 +77,15 @@ if data_file:
         ac = entry['Area Coefficient']
         angle_deg = entry['Cutting slope']
 
-        slope = 1 / np.tan(np.radians(angle_deg))
+        if pd.isna(angle_deg):
+        st.error(f"❌ Missing Cutting slope at Chainage {chainage}. Please correct this value in your file.")
+        st.stop()
+    try:
+            angle_deg = float(angle_deg)
+            slope = 1 / np.tan(np.radians(angle_deg))
+        except Exception:
+        st.error(f"❌ Invalid Cutting slope value at Chainage {chainage}. Please correct this value in your file.")
+        st.stop()
         h1_coef = (ac - 0.5) * 2
         area = ac * (fw - ow) * fh
 
@@ -114,6 +122,11 @@ if data_file:
         ax.set_ylabel("Height", fontsize=6)
         ax.grid(True, linestyle='--', linewidth=0.3)
 
+    st.info("⏳ Generating plots... please wait")
+    progress_bar = st.progress(0)
+    total_steps = len(data)
+    current_step = 0
+
     for idx, row in data.iterrows():
         if row.notna().all():
             ax = axs[plot_count % (rows * cols)]
@@ -128,6 +141,8 @@ if data_file:
             all_imgs.append(buf.getvalue())
 
             plot_count += 1
+            current_step += 1
+            progress_bar.progress(min(current_step / total_steps, 1.0))
 
             if plot_count % (rows * cols) == 0:
                 pdf.savefig(fig)
