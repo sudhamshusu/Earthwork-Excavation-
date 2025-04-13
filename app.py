@@ -6,9 +6,25 @@ from matplotlib.backends.backend_pdf import PdfPages
 import io
 
 st.set_page_config(layout="wide")
-st.title("Cross-Section Plot Generator")
+st.title("📐 Earthwork Cross-Section Plot Generator")
 
-# 1. Upload input Excel
+# 📘 Instructions for Public Users
+st.markdown("""
+### 📌 How to Use This Tool:
+1. **Download the Templates** using the buttons below.
+2. **Fill out the Input Template (`sample.xlsx`)** with chainage, widths, height, slope, etc.
+3. **Fill out the Summary Template (`summary.xlsx`)** with project-specific details.
+4. **Upload both filled files** using the file uploaders.
+5. Wait for the app to generate:
+   - Project summary 📋
+   - Cross-section plots 📊
+   - Volume summary 📦
+6. **Preview plots** and **Download final reports** as PDF.
+
+💡 This tool helps automate earthwork quantity and visualization reporting for roads, embankments, and cut/fill projects.
+""")
+
+# 📤 Upload your Filled Templates
 data_file = st.file_uploader("Upload Input Excel File", type=["xlsx"])
 summary_file = st.file_uploader("Upload Editable Summary Excel (Optional)", type=["xlsx"])
 
@@ -25,9 +41,15 @@ if use_manual_summary:
     manual_summary["Agreement Date"] = st.date_input("Agreement Date")
     manual_summary["Completion Date"] = st.date_input("Expected Completion Date")
 
-# 2. Downloadable sample template
+# 📥 Download Public Templates to Get Started
 with open("D:/Learning Programming/Python/Crosssection generator/sample.xlsx", "rb") as file:
-    st.download_button("📥 Download Sample Input File", file, file_name="sample.xlsx")
+    col1, col2 = st.columns(2)
+with col1:
+    with open("sample.xlsx", "rb") as sample_file:
+        st.download_button("📥 Download Input Template", sample_file, file_name="sample.xlsx")
+with col2:
+    with open("summary.xlsx", "rb") as summary_file:
+        st.download_button("📥 Download Summary Template", summary_file, file_name="summary.xlsx")
 
 if data_file:
     # Load input data and find header
