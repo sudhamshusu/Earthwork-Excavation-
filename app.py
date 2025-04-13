@@ -125,12 +125,12 @@ if data_file:
         except:
             st.warning(f"⚠️ Skipping Chainage {chainage}: Invalid Cutting slope value '{angle_deg}'")
             return
-        h1_coef = (ac - 0.5) * 2
-        area = ac * (fw - ow) * fh
+        h1_coef = [(ac - 0.5) * 2]
+        area = [ac * (fw - ow) * fh]
 
         x1 = -fw / 2
         x3 = fw / 2
-        x4 = fw / 2 + slope * fh
+        x4 = [(fw / 2) + (slope * fh)]
         x6 = x1 + ow
         x7 = x6 + h1_coef * fh * slope
 
