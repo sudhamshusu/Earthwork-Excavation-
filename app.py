@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as st 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -226,26 +226,22 @@ if data_file and st.button("📊 Generate Cross Section Plots"):
                 with cols[i % 4]:
                     st.image(img, use_column_width=True)
 
-        # 🧾 Export Excel Summary (S.No, Chainage, Area, Volume)
-        summary_output = []
-        for i in range(len(data) - 1):  # skip total row
-            ch = float(str(data.at[i, "Chainage"]).replace("+", ""))
-            summary_output.append({
-                "S.No": i + 1,
-                "Chainage": f'{int(ch // 1000)}+{int(ch % 1000):03d}',
-                "Cross-sectional Area (m²)": round(data.at[i, "Area (m²)"], 2),
-                "Volume (m³)": round(data.at[i, "Volume (m³)"], 2)
-            })
+        # ✅ Minimal Volume Sheet (S.No, Chainage, Area, Volume)
+        minimal_df = pd.DataFrame({
+            "S.No": data["S.No"][:-1],  # Exclude 'Total'
+            "Chainage": data["Chainage"][:-1],
+            "Area": data["Area (m²)"][:-1].round(3),
+            "Volume": data["Volume (m³)"][:-1].round(3)
+        })
 
-        summary_df_excel = pd.DataFrame(summary_output)
-        excel_buffer = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-            summary_df_excel.to_excel(writer, index=False, sheet_name='CrossSection Summary')
+        excel_buffer_min = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer_min, engine='xlsxwriter') as writer:
+            minimal_df.to_excel(writer, index=False, sheet_name='Minimal Volume Sheet')
 
         st.download_button(
-            label="📥 Download Excel Summary",
-            data=excel_buffer.getvalue(),
-            file_name="CrossSection_Summary.xlsx",
+            label="📥 Download Minimal Volume Sheet (S.No, Chainage, Area, Volume)",
+            data=excel_buffer_min.getvalue(),
+            file_name="Volume_Summary_Minimal.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
