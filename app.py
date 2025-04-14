@@ -86,11 +86,22 @@ def plot_chainage_subplot(entry, ax):
     og_x = [x1, x6, x7, x4]
     og_y = [0, 0, h1_coef * fh, fh]
 
-    ax.plot(fg_x, fg_y, color="green", linewidth=2)
-    ax.plot(og_x, og_y, color="red", linestyle="--", linewidth=2)
+        # Plot lines
+    ax.plot(fg_x, fg_y, color="green", linewidth=2, label=f"FR: {fw:.2f} m")
+    ax.plot(og_x, og_y, color="red", linestyle="--", linewidth=2, label=f"OR: {ow:.2f} m")
     ax.fill(og_x + fg_x[::-1], og_y + fg_y[::-1], facecolor='gray', alpha=0.3, hatch='//', edgecolor='black')
+
+    # Add area as a text label inside plot
     ax.text((x3 + x7)/2, (fh + h1_coef * fh)/2, f"Area = {area:.2f} m²", fontsize=8, ha='center')
+
+    # Draw horizontal axis
     ax.axhline(0, color='black', linestyle=':')
+
+    # Add custom height label in legend
+    height_proxy = plt.Line2D([0], [0], color='white', label=f"H: {fh:.2f} m")
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles + [height_proxy], labels + [height_proxy.get_label()], fontsize=6, loc='upper right')
+
 
     try:
         ch_int = int(float(chainage))
