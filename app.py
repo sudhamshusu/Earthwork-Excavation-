@@ -86,21 +86,26 @@ def plot_chainage_subplot(entry, ax):
     og_x = [x1, x6, x7, x4]
     og_y = [0, 0, h1_coef * fh, fh]
 
-        # Plot lines
-    ax.plot(fg_x, fg_y, color="green", linewidth=2, label=f"FR: {fw:.2f} m")
-    ax.plot(og_x, og_y, color="red", linestyle="--", linewidth=2, label=f"OR: {ow:.2f} m")
-    ax.fill(og_x + fg_x[::-1], og_y + fg_y[::-1], facecolor='gray', alpha=0.3, hatch='//', edgecolor='black')
+       # Plot lines with full-form labels
+ax.plot(fg_x, fg_y, color="green", linewidth=2, label=f"Finished Roadway Width: {fw:.2f} m")
+ax.plot(og_x, og_y, color="red", linestyle="--", linewidth=2, label=f"Original Roadway Width: {ow:.2f} m")
 
-    # Add area as a text label inside plot
-    ax.text((x3 + x7)/2, (fh + h1_coef * fh)/2, f"Area = {area:.2f} m²", fontsize=8, ha='center')
+# Fill the area between the two lines
+ax.fill(og_x + fg_x[::-1], og_y + fg_y[::-1], facecolor='gray', alpha=0.3, hatch='//', edgecolor='black')
 
-    # Draw horizontal axis
-    ax.axhline(0, color='black', linestyle=':')
+# Show calculated area as label inside the plot
+ax.text((x3 + x7)/2, (fh + h1_coef * fh)/2, f"Area = {area:.2f} m²", fontsize=8, ha='center')
 
-    # Add custom height label in legend
-    height_proxy = plt.Line2D([0], [0], color='white', label=f"H: {fh:.2f} m")
-    handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles + [height_proxy], labels + [height_proxy.get_label()], fontsize=6, loc='upper left')
+# Baseline
+ax.axhline(0, color='black', linestyle=':')
+
+# Add a proxy line to include Finished Height in the legend
+height_proxy = plt.Line2D([0], [0], color='white', label=f"Finished Height: {fh:.2f} m")
+
+# Combine all labels for the legend
+handles, labels = ax.get_legend_handles_labels()
+ax.legend(handles + [height_proxy], labels + [height_proxy.get_label()], fontsize=6, loc='upper left')
+
 
 
     try:
