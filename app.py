@@ -100,7 +100,7 @@ def plot_chainage_subplot(entry, ax):
     # Add custom height label in legend
     height_proxy = plt.Line2D([0], [0], color='white', label=f"H: {fh:.2f} m")
     handles, labels = ax.get_legend_handles_labels()
-    ax.legend(handles + [height_proxy], labels + [height_proxy.get_label()], fontsize=6, loc='upper right')
+    ax.legend(handles + [height_proxy], labels + [height_proxy.get_label()], fontsize=6, loc='upper left')
 
 
     try:
